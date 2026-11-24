@@ -202,8 +202,17 @@ run_wizard() {
 
 TOTAL_STAGES=3
 
-# Target this repo for all gh calls, regardless of where the script is run.
-export GH_REPO="EduardBargues/software-factory-example-python"
+# Target the repo this script lives in, detected from its git remote, so all gh
+# calls hit the right repo regardless of the current directory.
+_REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && git rev-parse --show-toplevel 2>/dev/null || true)"
+_DETECTED=""
+if [[ -n "$_REPO_DIR" ]]; then
+  _DETECTED="$(cd "$_REPO_DIR" && gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null || true)"
+fi
+export GH_REPO="${GH_REPO:-$_DETECTED}"
+if [[ -z "${GH_REPO:-}" ]]; then
+  printf '  %s⚠ could not detect the repo — run this from inside the repo clone%s\n' "$YELLOW" "$RESET"; exit 1
+fi
 
 banner "Mint the FACTORY_PAT"
 
@@ -212,11 +221,11 @@ stage "GitHub: new fine-grained token — basics"
 say "The factory's tasks use this token to open PRs and trigger downstream"
 say "runs — the built-in GITHUB_TOKEN can do neither."
 open_url "https://github.com/settings/personal-access-tokens/new"
-step "Token name:        FACTORY_PAT — software-factory-example-python"
-step "Resource owner:    EduardBargues"
+step "Token name:        FACTORY_PAT — ${GH_REPO##*/}"
+step "Resource owner:    ${GH_REPO%%/*}"
 step "Expiration:        90 days   (never pick 'No expiration')"
 step "Repository access: choose 'Only select repositories', then select"
-step "                   EduardBargues/software-factory-example-python  (this repo only)"
+step "                   $GH_REPO  (this repo only)"
 note "Don't click 'Generate token' yet — permissions come next."
 pause "Done all of the above? Press Enter."
 

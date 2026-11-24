@@ -1,4 +1,4 @@
-"""software-factory-example-grill-bot — scaffolded by new-factory-repo.sh. Replace with the real implementation."""
+"""Scaffold package — replace with the real implementation."""
 
 
 def healthcheck() -> bool:
