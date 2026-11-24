@@ -1,0 +1,22 @@
+# morning-rebase (thin caller) — keep open PRs fresh.
+# The shared logic lives in the hub's reusable workflow (ADR-0003), pinned by tag.
+# This caller owns the triggers and gates which event runs it.
+name: morning-rebase
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC daily (adjust to your morning)
+  workflow_dispatch: {}
+  pull_request:
+    types: [labeled]
+
+# Caps the token the reusable workflow receives (it uses FACTORY_PAT for pushes).
+permissions:
+  contents: read
+
+jobs:
+  rebase:
+    # Scheduled/manual runs rebase all PRs; a labeled run fires only for agent:rebase.
+    if: github.event_name != 'pull_request' || github.event.label.name == 'agent:rebase'
+    uses: EduardBargues/software-factory-example-home-repo/.github/workflows/morning-rebase.yml@v0.1.0
+    secrets: inherit

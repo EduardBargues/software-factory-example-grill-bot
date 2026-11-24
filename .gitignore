@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# uv
+# (uv.lock is committed; cache is not)
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+.terraform.lock.hcl
+
+# AWS / secrets — never commit
+.env
+.env.*
+*.pem
+aws.json
+credentials
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Shared skills are loaded at CI time from the home repo (ADR-0002), never committed
+.claude/skills/
+.claude/settings.local.json
+
+# Factory runtime scratch (the staged ticket a task reads) — never committed
+.factory/

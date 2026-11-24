@@ -1,0 +1,16 @@
+# auto-label (thin caller) — the factory's entry gate.
+# The shared logic lives in the hub's reusable workflow (ADR-0003), pinned by tag.
+name: auto-label
+
+on:
+  issues:
+    types: [opened]
+
+# Caps the token the reusable workflow receives (it uses FACTORY_PAT for the write).
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    uses: EduardBargues/software-factory-example-home-repo/.github/workflows/auto-label.yml@v0.1.0
+    secrets: inherit

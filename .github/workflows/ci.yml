@@ -1,0 +1,39 @@
+name: brakes
+
+# Runs the same brakes as pre-commit, so a commit can never dodge them with
+# --no-verify. Required to pass before merge once branch protection is on.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: the brakes only need to read the repo.
+permissions:
+  contents: read
+
+# Make pre-commit's pip hook installs use the repo-local public-PyPI config.
+env:
+  PIP_CONFIG_FILE: ${{ github.workspace }}/.config/pip/pip.conf
+
+concurrency:
+  group: brakes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  brakes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0 # full history so secret scanning can see all commits
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          python-version: "3.12"
+
+      - name: Sync dependencies
+        run: uv sync --locked
+
+      - name: Run all brakes
+        run: uv run pre-commit run --all-files --show-diff-on-failure
