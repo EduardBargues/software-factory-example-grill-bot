@@ -60,7 +60,7 @@ jobs:
           echo "BASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
       # Bring the shared skills from the home repo into the working tree (ADR-0002).
-      - uses: EduardBargues/software-factory-example-home-repo/.github/actions/load-shared-skills@v0.1.0
+      - uses: EduardBargues/software-factory-example-home-repo/.github/actions/load-shared-skills@v0
 
       - name: Install the brakes (so the agent commits fixes through pre-commit)
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
@@ -102,7 +102,7 @@ jobs:
 
       - name: Review
         id: review
-        uses: EduardBargues/software-factory-example-home-repo/.github/actions/run-agent@v0.1.0
+        uses: EduardBargues/software-factory-example-home-repo/.github/actions/run-agent@v0
         with:
           federation-rule-id: ${{ secrets.ANTHROPIC_FEDERATION_RULE_ID }}
           organization-id: ${{ secrets.ANTHROPIC_ORGANIZATION_ID }}
