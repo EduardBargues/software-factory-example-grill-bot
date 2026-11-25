@@ -1,31 +1,30 @@
-"""Local dev entry point — reads Slack creds from the environment and starts Socket Mode.
+"""Entry point — connect to Slack via Socket Mode and listen.
 
-In a container (Fargate) there is no `.env`; the creds arrive as injected env vars, so
+The service runs constantly. It does **not** post anything on startup. Grilling sessions
+are started by the polling loop (ticket 07): on an `agent:grill-with-docs` issue it posts
+an opener, registers that thread as owned, and the mention-handler then responds to
+@mentions inside it. This entry point just stands up the listener with an initially empty
+set of owned threads.
+
+In a container (Fargate) there is no `.env`; creds arrive as injected env vars, so
 `load_dotenv(override=False)` is a no-op there and the real environment always wins.
-Locally it loads a gitignored `.env`.
 """
 
 import os
 
 from dotenv import load_dotenv
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-from slack_sdk import WebClient
 
-from grill_bot.adapters.slack_bot import build_app, post_root
+from grill_bot.adapters.slack_bot import build_app
 
 
 def main() -> None:
     load_dotenv(override=False)  # no-op in a container; injected env vars take precedence
     bot_token = os.environ["SLACK_BOT_TOKEN"]
     app_token = os.environ["SLACK_APP_TOKEN"]
-    channel = os.environ.get("SLACK_CHANNEL", "#grill-bot")
-    issue_url = os.environ.get("GRILL_ISSUE_URL", "<issue link>")
 
-    client = WebClient(token=bot_token)
-    opener = f"Grilling session started for {issue_url}\nTag me (@grill-bot) to submit an answer."
-    thread_ts = post_root(client, channel, opener)
-
-    app = build_app(bot_token, thread_ts)
+    owned_threads: set[str] = set()  # populated per session by the polling loop (ticket 07)
+    app = build_app(bot_token, owned_threads)
     SocketModeHandler(app, app_token).start()  # type: ignore[no-untyped-call]
 
 

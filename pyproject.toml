@@ -19,6 +19,7 @@ dev = [
     "pip-audit>=2.7",
     "pre-commit>=3.8",
     "hypothesis>=6.0",
+    "pytest-mock>=3.0",
 ]
 
 # Resolve from public PyPI, overriding any token-gated global index. Integrity is
