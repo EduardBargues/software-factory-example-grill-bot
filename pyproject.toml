@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "python-dotenv>=1.0",
     "slack-bolt>=1.18",
+    "slack-sdk>=3.21",
 ]
 
 [dependency-groups]
@@ -17,6 +18,7 @@ dev = [
     "bandit>=1.7",
     "pip-audit>=2.7",
     "pre-commit>=3.8",
+    "hypothesis>=6.0",
 ]
 
 # Resolve from public PyPI, overriding any token-gated global index. Integrity is
