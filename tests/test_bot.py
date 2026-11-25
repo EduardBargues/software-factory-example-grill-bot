@@ -30,3 +30,10 @@ def test_handler_ignores_root_message() -> None:
     handler = _make_message_handler("123.456")
     handler({"text": "hello"}, say)  # no thread_ts
     say.assert_not_called()
+
+
+def test_handler_ignores_text_less_message() -> None:
+    say = MagicMock()
+    handler = _make_message_handler("123.456")
+    handler({"thread_ts": "123.456"}, say)  # file-only / no text
+    say.assert_not_called()

@@ -21,7 +21,10 @@ def _make_message_handler(owned_thread_ts: str) -> Callable[..., None]:
     def handle_message(event: dict[str, Any], say: Say) -> None:
         if event.get("thread_ts") != owned_thread_ts:
             return
-        say(text=str(event["text"]), thread_ts=owned_thread_ts)
+        text = event.get("text")
+        if text is None:
+            return
+        say(text=str(text), thread_ts=owned_thread_ts)
 
     return handle_message
 
