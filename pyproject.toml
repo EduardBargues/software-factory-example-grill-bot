@@ -3,7 +3,10 @@ name = "software-factory-example-grill-bot"
 version = "0.0.0"
 description = "Slack grilling bot for the software factory: convenes a needs-a-human ticket in a Slack thread, then runs grill -> to-spec -> to-tickets back into the factory (home-repo ADR-0005)."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "python-dotenv>=1.0",
+    "slack-bolt>=1.18",
+]
 
 [dependency-groups]
 dev = [
