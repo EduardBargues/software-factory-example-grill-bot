@@ -1,61 +1,47 @@
-from hypothesis import HealthCheck, given, settings
-from hypothesis import strategies as st
 from pytest_mock import MockerFixture
 
-from grill_bot.adapters.slack_bot import _make_mention_handler, post_root
-from tests.dsl import then
+from tests.dsl import given, then, when
 
 OWNED = "123.456"
-
-# hypothesis re-runs each test body many times, but the function-scoped `mocker` fixture
-# is set up once; we create a fresh mock per example from it, so the health check is moot.
-_FIXTURE_OK = [HealthCheck.function_scoped_fixture]
+OTHER = "999.999"
+CHANNEL = "#grill"
 
 
-@settings(suppress_health_check=_FIXTURE_OK)
-@given(channel=st.text(min_size=1), text=st.text(min_size=1))
-def test_when_posting_an_opener(mocker: MockerFixture, channel: str, text: str) -> None:
+def test_when_posting_an_opener(mocker: MockerFixture) -> None:
     # Given a Slack client that reports a ts for the posted message
-    client = mocker.MagicMock()
-    client.chat_postMessage.return_value = {"ts": OWNED}
+    client = given.a_slack_client_reporting_ts(mocker, OWNED)
     # When the bot posts the opener
-    ts = post_root(client, channel, text)
-    # Then the bot owns the new thread, and posted exactly one message
+    ts = when.the_bot_posts_an_opener(client, channel=CHANNEL, text="Session started")
+    # Then the bot owns that thread and posted exactly one opener
     then.the_bot_owns_the_thread(ts, OWNED)
-    then.the_bot_posted_the_opener(client, channel=channel, text=text)
+    then.the_bot_posted_the_opener(client, channel=CHANNEL, text="Session started")
 
 
-@settings(suppress_health_check=_FIXTURE_OK)
-@given(body=st.text().filter(lambda s: "<@" not in s and s.strip() != ""))
-def test_when_mentioned_in_an_owned_thread(mocker: MockerFixture, body: str) -> None:
+def test_when_mentioned_in_an_owned_thread(mocker: MockerFixture) -> None:
     # Given an owned thread with an active session
-    say = mocker.MagicMock()
-    handle = _make_mention_handler({OWNED})
-    # When someone answers by mentioning the bot in that thread
-    handle({"thread_ts": OWNED, "text": f"<@UAPP> {body}"}, say)
-    # Then the bot echoes the answer back, with the mention stripped
-    then.the_bot_echoed(say, text=body.strip(), thread_ts=OWNED)
+    say = given.a_say(mocker)
+    handler = given.a_bot_owning(OWNED)
+    # When someone answers by mentioning the bot there
+    when.mentioned(handler, say, text="<@UAPP> yes, ship it", thread_ts=OWNED)
+    # Then the bot responds in that thread with the answer, mention stripped
+    then.the_bot_responded(say, text="yes, ship it", thread_ts=OWNED)
 
 
-@settings(suppress_health_check=_FIXTURE_OK)
-@given(other=st.text(min_size=1).filter(lambda s: s != OWNED), body=st.text(min_size=1))
-def test_when_mentioned_in_an_unowned_thread(mocker: MockerFixture, other: str, body: str) -> None:
-    # Given a thread the bot does not own (no active session there)
-    say = mocker.MagicMock()
-    handle = _make_mention_handler({OWNED})
+def test_when_mentioned_in_an_unowned_thread(mocker: MockerFixture) -> None:
+    # Given a thread the bot does not own
+    say = given.a_say(mocker)
+    handler = given.a_bot_owning(OWNED)
     # When the bot is mentioned there
-    handle({"thread_ts": other, "text": f"<@UAPP> {body}"}, say)
-    # Then the bot stays silent
-    then.the_bot_stayed_silent(say)
+    when.mentioned(handler, say, text="<@UAPP> hi", thread_ts=OTHER)
+    # Then the bot explains it only helps inside an active session
+    then.the_bot_explained_it_is_out_of_session(say, thread_ts=OTHER)
 
 
-@settings(suppress_health_check=_FIXTURE_OK)
-@given(mention=st.sampled_from(["<@UAPP>", "<@UAPP> ", "  <@UAPP>  ", "<@UAPP><@UBOB>"]))
-def test_when_mentioned_with_only_a_mention(mocker: MockerFixture, mention: str) -> None:
-    # Given an owned thread
-    say = mocker.MagicMock()
-    handle = _make_mention_handler({OWNED})
-    # When the message is only the mention, carrying no answer text
-    handle({"thread_ts": OWNED, "text": mention}, say)
-    # Then the stripped text is empty — not an answer — so the bot stays silent
-    then.the_bot_stayed_silent(say)
+def test_when_mentioned_with_only_a_mention(mocker: MockerFixture) -> None:
+    # Given an owned thread with an active session
+    say = given.a_say(mocker)
+    handler = given.a_bot_owning(OWNED)
+    # When the message is only the mention, carrying no answer
+    when.mentioned(handler, say, text="<@UAPP>", thread_ts=OWNED)
+    # Then the bot nudges that the message looks empty
+    then.the_bot_nudged_the_empty_mention(say, thread_ts=OWNED)

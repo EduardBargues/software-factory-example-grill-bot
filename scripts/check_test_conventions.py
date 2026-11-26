@@ -1,23 +1,38 @@
 #!/usr/bin/env python3
-"""Pre-commit check: test functions follow the convention in CODING_STANDARDS.md.
+"""Pre-commit check: tests follow CODING_STANDARDS.md.
 
-Each `def test_*` under tests/ must be named `test_when_<scenario>` and carry an
-`@given(...)` decorator. (The Given/When/Then body layout is review-enforced.)
+Each `def test_*` under tests/ must:
+  - use the `given` / `when` / `then` DSL (one call of each), and
+  - assert only through `then` (no bare `assert`, no mock `.assert_*` calls).
+
+Test names are free — describe the scenario; no naming pattern is enforced.
 """
 
 import ast
 import sys
 
 _TestDef = (ast.FunctionDef, ast.AsyncFunctionDef)
+_DSL = ("given", "when", "then")
 
 
-def _has_given(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
-    for dec in node.decorator_list:
-        target = dec.func if isinstance(dec, ast.Call) else dec
-        name = target.attr if isinstance(target, ast.Attribute) else getattr(target, "id", "")
-        if name == "given":
-            return True
-    return False
+def _check(fn: ast.FunctionDef | ast.AsyncFunctionDef, path: str, errors: list[str]) -> None:
+    used: set[str] = set()
+    for node in ast.walk(fn):
+        if isinstance(node, ast.Assert):
+            errors.append(f"{path}:{node.lineno}: assert through the `then` DSL, not a bare assert")
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if node.func.attr.startswith("assert_"):
+                errors.append(
+                    f"{path}:{node.lineno}: assert through `then`, not a mock .{node.func.attr}()"
+                )
+            target = node.func.value
+            if isinstance(target, ast.Name) and target.id in _DSL:
+                used.add(target.id)
+    for dsl in _DSL:
+        if dsl not in used:
+            errors.append(
+                f"{path}:{fn.lineno}: '{fn.name}' must use `{dsl}.` (given / when / then)"
+            )
 
 
 def check_file(path: str) -> list[str]:
@@ -26,12 +41,7 @@ def check_file(path: str) -> list[str]:
     errors: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, _TestDef) and node.name.startswith("test"):
-            if not node.name.startswith("test_when_"):
-                errors.append(
-                    f"{path}:{node.lineno}: '{node.name}' must be named test_when_<scenario>"
-                )
-            if not _has_given(node):
-                errors.append(f"{path}:{node.lineno}: '{node.name}' needs an @given(...) decorator")
+            _check(node, path, errors)
     return errors
 
 
