@@ -34,6 +34,8 @@ def _make_mention_handler(owned_threads: set[str]) -> Callable[..., None]:
     """
 
     def handle_mention(event: dict[str, Any], say: Say) -> None:
+        # Bolt auto-acks the event; returning early skips only the reply, not the ack —
+        # so staying silent never makes Slack retry delivery.
         thread_ts = event.get("thread_ts")
         if thread_ts not in owned_threads:
             return

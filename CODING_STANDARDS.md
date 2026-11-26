@@ -1,7 +1,7 @@
 # Coding standards
 
-Fuzzy rules the **review** brake enforces, for things no automated check can express.
-Grown and pruned via `/retro`.
+Conventions the factory enforces — some as automated **checks**, the rest by the **review**
+brake (for what no check can express). Grown and pruned via `/retro`.
 
 ## Architecture
 
@@ -9,4 +9,6 @@ Grown and pruned via `/retro`.
 
 ## Testing
 
-- **Property-based, Given/When/Then.** Tests use [`hypothesis`](https://hypothesis.readthedocs.io): every test carries an `@given(...)` decorator, is named `test_when_<scenario>`, and is laid out in **Given / When / Then** blocks (comment each). Assert as many facts as the scenario needs. This ties tests to the agreed business logic rather than hand-picked examples.
+- **Property-based, named by scenario** — *hard rule, `scripts/check_test_conventions.py`*: every test carries an `@given(...)` decorator and is named `test_when_<scenario>` (name the *scenario*, not the expectation — a scenario can assert several things).
+- **Given / When / Then layout** — *review-enforced*: lay the body out in Given / When / Then blocks, one comment each.
+- **Assert in the domain vocabulary** — *review-enforced*: use the fluent `then` helpers in [`tests/dsl.py`](tests/dsl.py) (e.g. `then.the_bot_owns_the_thread(ts, OWNED)`), which read in [`GLOSSARY.md`](GLOSSARY.md) terms, instead of raw mock assertions.
