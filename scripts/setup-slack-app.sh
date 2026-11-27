@@ -248,20 +248,20 @@ step "Copy the 'Bot User OAuth Token' -- it starts with 'xoxb-'."
 ask_secret SLACK_BOT_TOKEN "Paste the bot token (xoxb-...):"
 write_env SLACK_BOT_TOKEN "$SLACK_BOT_TOKEN"
 
-# --- Stage 4: invite the bot to a test channel -----------------------------
-stage "Invite the bot to a test channel"
-say "The bot can only post where it is a member."
+# --- Stage 4: invite the bot to a channel ----------------------------------
+stage "Invite the bot to a channel"
+say "The bot only sees @mentions in channels it is a member of."
 step "In Slack, create or open a channel (e.g. #grill-test)."
 step "Invite the bot: type  /invite @grill-bot  in that channel."
-ask GRILL_DEV_CHANNEL "Channel for the bot to post in (e.g. #grill-test):"
-write_env GRILL_DEV_CHANNEL "$GRILL_DEV_CHANNEL"
+pause "Bot invited? Press Enter."
 
 # --- Stage 5: run it -------------------------------------------------------
 stage "Run it"
-say "Start the dev runner -- it opens a session in that channel and listens:"
-step "uv run python scripts/dev_run.py"
-say "Then mention the bot in the thread it opens:  @grill-bot yes, ship it"
-say "It should echo your answer back into that thread."
+say "Start the bot -- it connects over Socket Mode and listens for @mentions:"
+step "uv run python -m grill_bot"
+say "Then mention it in that channel:  @grill-bot hello"
+say "It replies that this thread is not an active session yet -- that reply"
+say "confirms the websocket connected and the bot answers when tagged."
 
 finish
 }
