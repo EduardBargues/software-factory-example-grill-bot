@@ -1,7 +1,4 @@
-"""Fluent given / when / then DSL in GLOSSARY.md vocabulary. Tests assert only via `then`."""
-
-from collections.abc import Callable
-from typing import Any
+"""Given / When / Then test DSL. A Scenario hides the mocks so tests speak only GLOSSARY terms."""
 
 from pytest_mock import MockerFixture, MockType
 
@@ -12,54 +9,57 @@ from grill_bot.adapters.slack_bot import (
     post_root,
 )
 
+OPENER_TEXT = "Session started"
+
+
+class Scenario:
+    """Holds a test's mocks and state; only the DSL touches them, never a test body."""
+
+    def __init__(self, mocker: MockerFixture) -> None:
+        self.say: MockType = mocker.MagicMock()
+        self.client: MockType = mocker.MagicMock()
+        self.owned: set[str] = set()
+        self.posted_ts: str = ""
+
 
 class _Given:
-    def a_say(self, mocker: MockerFixture) -> MockType:
-        say: MockType = mocker.MagicMock()
-        return say
+    def an_active_grilling_session(self, scenario: Scenario, *, in_thread: str) -> None:
+        scenario.owned.add(in_thread)
 
-    def a_slack_client_reporting_ts(self, mocker: MockerFixture, ts: str) -> MockType:
-        client: MockType = mocker.MagicMock()
-        client.chat_postMessage.return_value = {"ts": ts}
-        return client
-
-    def a_bot_owning(self, *threads: str) -> Callable[..., None]:
-        return _make_mention_handler(set(threads))
+    def a_channel_that_reports_its_ts(self, scenario: Scenario, *, ts: str) -> None:
+        scenario.client.chat_postMessage.return_value = {"ts": ts}
 
 
 class _When:
-    def the_bot_posts_an_opener(self, client: MockType, *, channel: str, text: str) -> str:
-        return post_root(client, channel, text)
+    def the_bot_is_mentioned(self, scenario: Scenario, *, in_thread: str, with_answer: str) -> None:
+        handler = _make_mention_handler(scenario.owned)
+        handler({"thread_ts": in_thread, "text": f"<@UAPP> {with_answer}"}, scenario.say)
 
-    def mentioned(
-        self,
-        handler: Callable[..., None],
-        say: MockType,
-        *,
-        text: str,
-        thread_ts: str | None = None,
-    ) -> None:
-        event: dict[str, Any] = {"text": text}
-        if thread_ts is not None:
-            event["thread_ts"] = thread_ts
-        handler(event, say)
+    def the_bot_is_mentioned_with_no_answer(self, scenario: Scenario, *, in_thread: str) -> None:
+        handler = _make_mention_handler(scenario.owned)
+        handler({"thread_ts": in_thread, "text": "<@UAPP>"}, scenario.say)
+
+    def the_bot_posts_an_opener(self, scenario: Scenario, *, in_channel: str) -> None:
+        scenario.posted_ts = post_root(scenario.client, in_channel, OPENER_TEXT)
 
 
 class _Then:
-    def the_bot_owns_the_thread(self, returned_ts: str, expected_ts: str) -> None:
-        assert returned_ts == expected_ts
+    def the_bot_owns_the_thread(self, scenario: Scenario, expected_ts: str) -> None:
+        assert scenario.posted_ts == expected_ts
 
-    def the_bot_posted_the_opener(self, client: MockType, *, channel: str, text: str) -> None:
-        client.chat_postMessage.assert_called_once_with(channel=channel, text=text)
+    def the_bot_posted_an_opener(self, scenario: Scenario, *, in_channel: str) -> None:
+        scenario.client.chat_postMessage.assert_called_once_with(
+            channel=in_channel, text=OPENER_TEXT
+        )
 
-    def the_bot_responded(self, say: MockType, *, text: str, thread_ts: str) -> None:
-        say.assert_called_once_with(text=text, thread_ts=thread_ts)
+    def the_bot_responds_with(self, scenario: Scenario, answer: str, *, in_thread: str) -> None:
+        scenario.say.assert_called_once_with(text=answer, thread_ts=in_thread)
 
-    def the_bot_explained_it_is_out_of_session(self, say: MockType, *, thread_ts: str) -> None:
-        say.assert_called_once_with(text=OUT_OF_SESSION_MESSAGE, thread_ts=thread_ts)
+    def the_bot_says_it_is_out_of_session(self, scenario: Scenario, *, in_thread: str) -> None:
+        scenario.say.assert_called_once_with(text=OUT_OF_SESSION_MESSAGE, thread_ts=in_thread)
 
-    def the_bot_nudged_the_empty_mention(self, say: MockType, *, thread_ts: str) -> None:
-        say.assert_called_once_with(text=EMPTY_MENTION_MESSAGE, thread_ts=thread_ts)
+    def the_bot_nudges_the_empty_mention(self, scenario: Scenario, *, in_thread: str) -> None:
+        scenario.say.assert_called_once_with(text=EMPTY_MENTION_MESSAGE, thread_ts=in_thread)
 
 
 given = _Given()
