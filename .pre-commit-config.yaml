@@ -47,6 +47,12 @@ repos:
         entry: uv run python scripts/check_file_size.py
         language: system
         types: [python]
+      # Test-convention hard rule (CODING_STANDARDS): given/when/then DSL + assert via then.
+      - id: test-conventions
+        name: test conventions (given/when/then + assert via then)
+        entry: uv run python scripts/check_test_conventions.py
+        language: system
+        files: ^tests/.*\.py$
       - id: mypy
         name: mypy (strict)
         entry: uv run mypy
