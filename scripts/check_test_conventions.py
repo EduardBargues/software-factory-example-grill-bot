@@ -3,7 +3,7 @@
 
 Each `def test_*` under tests/ must:
   - be named `test_when_<scenario>` (name the single scenario under test),
-  - use the `given` / `when` / `then` DSL (one call of each), and
+  - use the `given`, `when`, and `then` DSL (one `when`; `given`/`then` may repeat), and
   - assert only through `then` (no bare `assert`, no mock `.assert_*` calls).
 """
 

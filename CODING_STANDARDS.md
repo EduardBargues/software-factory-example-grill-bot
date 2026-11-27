@@ -9,6 +9,4 @@ brake (for what no check can express). Grown and pruned via `/retro`.
 
 ## Testing
 
-- **Given / When / Then via the DSL** — *hard rule (`scripts/check_test_conventions.py`)*: every test uses the `given` / `when` / `then` helpers (one call of each) and asserts **only** through `then` — no bare `assert`, no mock `.assert_*`. Each test is named `test_when_<scenario>` (the single scenario under test).
-- **Assert in the domain vocabulary** — the `given`/`when`/`then` helpers in [`tests/dsl.py`](tests/dsl.py) speak [`GLOSSARY.md`](GLOSSARY.md) terms; add a helper there rather than asserting inline.
-- **Mocks via pytest-mock** — *hard rule (ruff `TID` banned-api)*: create mocks with the `mocker` fixture; `unittest.mock` is banned. Type hints use `pytest_mock.MockType`.
+- **The DSL speaks the domain** — the `given`/`when`/`then` helpers in [`tests/dsl.py`](tests/dsl.py) read in [`GLOSSARY.md`](GLOSSARY.md) vocabulary, conjugated by role: **given** future ("the bot *will* open…"), **when** present ("the bot *opens*…"), **then** past ("the bot *opened*…"). Say the same concept the same way across the three. *(The mechanical rules — `test_when_` naming, given/when/then usage, assert-only-via-`then`, mocks via pytest-mock — are enforced by `scripts/check_test_conventions.py` and ruff; not restated here.)*
