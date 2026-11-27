@@ -2,10 +2,9 @@
 """Pre-commit check: tests follow CODING_STANDARDS.md.
 
 Each `def test_*` under tests/ must:
+  - be named `test_when_<scenario>` (name the single scenario under test),
   - use the `given` / `when` / `then` DSL (one call of each), and
   - assert only through `then` (no bare `assert`, no mock `.assert_*` calls).
-
-Test names are free — describe the scenario; no naming pattern is enforced.
 """
 
 import ast
@@ -16,6 +15,8 @@ _DSL = ("given", "when", "then")
 
 
 def _check(fn: ast.FunctionDef | ast.AsyncFunctionDef, path: str, errors: list[str]) -> None:
+    if not (fn.name.startswith("test_when_") and len(fn.name) > len("test_when_")):
+        errors.append(f"{path}:{fn.lineno}: '{fn.name}' must be named test_when_<scenario>")
     used: set[str] = set()
     for node in ast.walk(fn):
         if isinstance(node, ast.Assert):
